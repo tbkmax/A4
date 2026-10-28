@@ -1,4 +1,4 @@
-# Local Agent demo
+# Local Agent
 
 A Tauri 2 desktop app with an Alpine.js interface. It checks local Ollama, lets you choose a workspace and model in Settings, turns model responses into actions, runs them, and keeps a local audit log.
 
