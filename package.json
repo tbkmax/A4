@@ -1,0 +1,27 @@
+{
+  "name": "local-agent-demo",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "tauri": "scripts\\tauri-windows.cmd",
+    "check:native": "scripts\\tauri-windows.cmd --check",
+    "test:flow": "node --test tests/*.test.js",
+    "test:native": "scripts\\tauri-windows.cmd --test"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.0.0",
+    "@tauri-apps/plugin-dialog": "^2.0.0",
+    "@tauri-apps/plugin-opener": "^2.0.0",
+    "alpinejs": "^3.14.0"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.0.0",
+    "vite": "^7.0.0"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true
+  }
+}

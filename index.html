@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#ffffff" />
+    <title>Local Agent</title>
+  </head>
+  <body>
+    <div id="app" x-data="agentApp" x-init="init()" x-cloak>
+      <header class="topbar">
+        <button class="brand" type="button" @click="view = 'chat'; skillsOpen = false" aria-label="Open chat">
+          <span class="brand-mark">✳</span><span>local agent</span>
+        </button>
+        <div class="top-actions">
+          <span class="connection" :class="ollama.running ? 'online' : 'offline'">
+            <span class="status-dot"></span><span x-text="ollama.running ? 'Ollama ready' : 'Ollama offline'"></span>
+          </span>
+          <div class="skills-wrap" @click.outside="skillsOpen = false">
+            <button class="button button-outline" type="button" aria-haspopup="true" :aria-expanded="skillsOpen" @click="skillsOpen = !skillsOpen">
+              Skills <span class="chevron" :class="skillsOpen && 'up'">⌄</span>
+            </button>
+            <div class="skills-menu" x-show="skillsOpen" x-transition:enter="menu-enter" x-transition:enter-start="menu-start" x-transition:enter-end="menu-end" x-transition:leave="menu-leave" x-transition:leave-start="menu-end" x-transition:leave-end="menu-start">
+              <div class="skills-menu-head"><strong>What the agent can do</strong><span>Ask naturally in chat.</span></div>
+              <template x-for="skill in skills" :key="skill.name">
+                <div class="skill-row"><span class="skill-icon" x-text="skill.icon"></span><div><strong x-text="skill.name"></strong><span x-text="skill.description"></span></div></div>
+              </template>
+            </div>
+          </div>
+          <button class="button button-quiet" type="button" @click="view = view === 'settings' ? 'chat' : 'settings'; skillsOpen = false" x-text="view === 'settings' ? 'Back to chat' : 'Settings'"></button>
+        </div>
+      </header>
+
+      <main class="shell">
+        <section class="chat-page" x-show="view === 'chat'" x-transition.opacity.duration.180ms>
+          <div class="setup" x-show="!ollama.running || !ollama.models.length">
+            <div class="eyebrow">LOCAL MODEL</div>
+            <h1>Start with Ollama.</h1>
+            <p x-text="ollama.running ? 'Ollama is running. Download a model, then check again.' : 'Install or start Ollama to use the agent.'"></p>
+            <div class="setup-actions">
+              <button class="button button-primary" type="button" @click="openOllama()">Get Ollama ↗</button>
+              <button class="button button-outline" type="button" @click="refreshOllama()">Check again</button>
+            </div>
+            <div class="snippet"><code>ollama pull llama3.2</code><button type="button" @click="copy('ollama pull llama3.2')">Copy</button></div>
+            <p class="small" x-text="ollama.error"></p>
+          </div>
+
+          <section class="chat" x-show="ollama.running && ollama.models.length">
+            <div class="chat-heading"><div><div class="eyebrow">YOUR LOCAL AGENT</div><h1>What can I help you do?</h1><p>Ask for files, commands, weather, facts, or public GitHub profiles.</p></div><button class="button button-outline new-conversation" type="button" @click="newConversation()" :disabled="busy">+ New conversation</button></div>
+            <div class="messages" x-ref="messages" aria-live="polite">
+              <div class="empty" x-show="messages.length === 0">
+                <div class="empty-mark">✳</div>
+                <p>Ready when you are.</p>
+                <span x-text="workspace ? 'Try “Create a file named test.txt containing hello.”' : 'Choose a workspace in Settings to begin.'"></span>
+                <button class="button button-outline" type="button" x-show="!workspace" @click="view = 'settings'">Open Settings</button>
+              </div>
+              <template x-for="(item, index) in messages" :key="index">
+                <div class="message" :class="item.role">
+                  <div class="message-label" x-text="item.role === 'user' ? 'YOU' : 'AGENT'"></div>
+                  <div class="message-text" x-text="item.content"></div>
+                  <div class="result-list" x-show="item.results?.length">
+                    <template x-for="(result, resultIndex) in item.results || []" :key="resultIndex">
+                      <div class="result" :class="result.status"><div class="result-title"><span x-text="result.status === 'success' ? '✓' : '!' "></span><strong x-text="result.action"></strong><small x-text="result.detail"></small></div><pre x-text="result.output"></pre></div>
+                    </template>
+                  </div>
+                </div>
+              </template>
+              <div class="typing" x-show="busy" x-transition.opacity><span x-text="busyLabel"></span><span class="typing-dots"><i></i><i></i><i></i></span></div>
+            </div>
+            <form class="composer" @submit.prevent="send()">
+              <textarea x-model="prompt" :disabled="busy || !workspace" placeholder="Message your agent…" aria-label="Message" @keydown.enter="if (!$event.shiftKey && !$event.isComposing) { $event.preventDefault(); send(); }"></textarea>
+              <div class="composer-bottom"><span>Enter to send · Shift+Enter for a new line</span><button class="button button-primary" type="submit" :disabled="busy || !workspace || !prompt.trim()">Send <span aria-hidden="true">↑</span></button></div>
+            </form>
+          </section>
+        </section>
+
+        <section class="settings-page" x-show="view === 'settings'" x-transition.opacity.duration.180ms>
+          <div class="eyebrow">PREFERENCES</div><h1>Settings</h1><p class="settings-intro">Set up the local model and the folder your agent works in.</p>
+          <div class="setting-row"><div><h2>Working folder</h2><p>File actions run inside this folder.</p><code class="setting-value" x-text="workspace || 'No folder selected'"></code></div><button class="button button-outline" type="button" @click="chooseWorkspace()" x-text="workspace ? 'Change folder' : 'Choose folder'"></button></div>
+          <div class="setting-row"><div><h2>Ollama model</h2><p>Choose one of your downloaded local models.</p></div><select aria-label="Ollama model" x-model="model" :disabled="!ollama.models.length"><template x-for="item in ollama.models" :key="item"><option :value="item" x-text="item"></option></template></select></div>
+          <div class="setting-row"><div><h2>Connection</h2><p x-text="ollama.running ? 'Ollama is available on this computer.' : ollama.error"></p></div><button class="button button-outline" type="button" @click="refreshOllama()">Check connection</button></div>
+          <button class="button button-primary settings-done" type="button" @click="view = 'chat'">Done →</button>
+        </section>
+      </main>
+      <div class="toast" x-show="notice" x-transition.opacity x-text="notice"></div>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
