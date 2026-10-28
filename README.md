@@ -12,6 +12,6 @@ The app talks to Ollama at `http://127.0.0.1:11434`. No API key is needed. A mod
 
 Use **New conversation** to clear chat history without changing the working folder or model.
 
-## GitHub Actions builds
+## GitHub Actions release
 
-The [Desktop builds workflow](.github/workflows/desktop-build.yml) runs on pushes, pull requests, and manual dispatch. It tests the app and packages macOS Apple Silicon, macOS Intel, and Windows x64 builds. Download the installers from the workflow run's **Artifacts** section. The macOS builds use ad-hoc signing, so macOS may ask you to allow the app in Privacy & Security when opening it.
+The [Desktop release workflow](.github/workflows/desktop-build.yml) runs only when a Git tag is pushed to GitHub. It tests the app, builds installers for macOS Apple Silicon, macOS Intel, and Windows x64, and uploads them directly to a GitHub Release named after the tag. After committing and pushing the workflow, run `git tag v0.1.0` followed by `git push origin v0.1.0`. The workflow does not save build artifacts. The macOS builds use ad-hoc signing, so macOS may ask you to allow the app in Privacy & Security when opening it.

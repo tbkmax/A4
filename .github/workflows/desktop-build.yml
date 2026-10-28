@@ -1,17 +1,16 @@
-name: Desktop builds
+name: Desktop release
 
 on:
   push:
-  pull_request:
-  workflow_dispatch:
-
-permissions:
-  contents: read
+    tags:
+      - '**'
 
 jobs:
   build:
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
     strategy:
       fail-fast: false
       matrix:
@@ -19,17 +18,14 @@ jobs:
           - name: macOS Apple Silicon
             os: macos-latest
             target: aarch64-apple-darwin
-            artifact: local-agent-macos-arm64
             signing_identity: '-'
           - name: macOS Intel
             os: macos-latest
             target: x86_64-apple-darwin
-            artifact: local-agent-macos-x64
             signing_identity: '-'
           - name: Windows x64
             os: windows-latest
             target: x86_64-pc-windows-msvc
-            artifact: local-agent-windows-x64
             signing_identity: ''
 
     steps:
@@ -54,14 +50,15 @@ jobs:
         if: matrix.target != 'x86_64-apple-darwin'
         run: cargo test --manifest-path src-tauri/Cargo.toml --locked
 
-      - name: Build desktop app
+      - name: Build and publish desktop app
+        uses: tauri-apps/tauri-action@v1
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           APPLE_SIGNING_IDENTITY: ${{ matrix.signing_identity }}
-        run: npm exec -- tauri build --target ${{ matrix.target }}
-
-      - name: Upload installers
-        uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact }}
-          path: src-tauri/target/${{ matrix.target }}/release/bundle/
-          if-no-files-found: error
+          tauriScript: npm exec -- tauri
+          args: --target ${{ matrix.target }}
+          tagName: ${{ github.ref_name }}
+          releaseName: Local Agent ${{ github.ref_name }}
+          releaseBody: Download the installer for your operating system below.
+          uploadWorkflowArtifacts: false
