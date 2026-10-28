@@ -11,3 +11,7 @@ A Tauri 2 desktop app with an Alpine.js interface. It checks local Ollama, lets 
 The app talks to Ollama at `http://127.0.0.1:11434`. No API key is needed. A model must appear in Ollama's `/api/tags` response before the chat opens.
 
 Use **New conversation** to clear chat history without changing the working folder or model.
+
+## GitHub Actions builds
+
+The [Desktop builds workflow](.github/workflows/desktop-build.yml) runs on pushes, pull requests, and manual dispatch. It tests the app and packages macOS Apple Silicon, macOS Intel, and Windows x64 builds. Download the installers from the workflow run's **Artifacts** section. The macOS builds use ad-hoc signing, so macOS may ask you to allow the app in Privacy & Security when opening it.
